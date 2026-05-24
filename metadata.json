@@ -1,0 +1,6 @@
+{
+  "name": "Pookiee",
+  "description": "Fun modern Android meme utility that plays custom sounds and memes during charging events.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

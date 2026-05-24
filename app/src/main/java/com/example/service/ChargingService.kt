@@ -10,6 +10,8 @@ import android.content.Intent
 import android.content.IntentFilter
 import android.os.BatteryManager
 import android.os.IBinder
+import android.content.pm.ServiceInfo
+import android.os.Build
 import androidx.core.app.NotificationCompat
 import com.example.PookieeApplication
 import com.example.data.model.ChargingEventType
@@ -99,7 +101,11 @@ class ChargingService : Service() {
         }
         registerReceiver(batteryReceiver, filter)
         
-        startForeground(1337, createNotification())
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+            startForeground(1337, createNotification(), ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE)
+        } else {
+            startForeground(1337, createNotification())
+        }
     }
 
     private fun handleEvent(type: ChargingEventType) {
@@ -121,7 +127,8 @@ class ChargingService : Service() {
         exoPlayer?.apply {
             stop()
             clearMediaItems()
-            setMediaItem(MediaItem.fromUri(uri), startMs)
+            setMediaItem(MediaItem.fromUri(uri))
+            seekTo(startMs)
             setVolume(volume)
             prepare()
             play()

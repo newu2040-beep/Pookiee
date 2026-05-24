@@ -7,7 +7,9 @@ import com.example.data.repository.PookieeRepository
 
 class PookieeApplication : Application() {
     private val database by lazy {
-        Room.databaseBuilder(this, PookieeDatabase::class.java, "pookiee.db").build()
+        Room.databaseBuilder(this, PookieeDatabase::class.java, "pookiee.db")
+            .fallbackToDestructiveMigration()
+            .build()
     }
     
     val repository by lazy {

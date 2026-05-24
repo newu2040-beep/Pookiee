@@ -70,22 +70,29 @@ fun BatteryMascot(
 
             // Draw Liquid / Level
             clipRect(
-                top = capHeight + bodyHeight * (1 - level / 100f),
+                top = 0f,
                 bottom = size.height
             ) {
-                // Wave effect
-                val waveHeight = 8.dp.toPx()
-                for (x in 0..size.width.toInt()) {
-                    val y = capHeight + bodyHeight * (1 - level / 100f) + 
-                            sin(x.toDouble() / size.width.toDouble() * 2 * Math.PI + waveOffset).toFloat() * waveHeight
+                val liquidTop = capHeight + bodyHeight * (1 - level / 100f)
+                val path = androidx.compose.ui.graphics.Path().apply {
+                    moveTo(0f, size.height)
+                    lineTo(0f, liquidTop)
                     
-                    drawLine(
-                        color = batteryColor.copy(alpha = 0.6f),
-                        start = Offset(x.toFloat(), y),
-                        end = Offset(x.toFloat(), size.height),
-                        strokeWidth = 1f
-                    )
+                    val waveHeight = 8.dp.toPx()
+                    for (x in 0..size.width.toInt() step 5) { // Stepping to reduce complexity
+                        val y = liquidTop + 
+                                sin(x.toDouble() / size.width.toDouble() * 2 * Math.PI + waveOffset).toFloat() * waveHeight
+                        lineTo(x.toFloat(), y)
+                    }
+                    lineTo(size.width, liquidTop)
+                    lineTo(size.width, size.height)
+                    close()
                 }
+                
+                drawPath(
+                    path = path,
+                    color = batteryColor.copy(alpha = 0.6f)
+                )
             }
         }
         

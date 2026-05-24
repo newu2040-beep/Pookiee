@@ -46,7 +46,11 @@ fun DashboardScreen(
 
     // Permission handling
     val permissionsToRequest = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-        arrayOf(android.Manifest.permission.POST_NOTIFICATIONS, android.Manifest.permission.READ_MEDIA_AUDIO)
+        arrayOf(
+            android.Manifest.permission.POST_NOTIFICATIONS, 
+            android.Manifest.permission.READ_MEDIA_AUDIO,
+            android.Manifest.permission.READ_MEDIA_VIDEO
+        )
     } else {
         arrayOf(android.Manifest.permission.READ_EXTERNAL_STORAGE)
     }
@@ -55,32 +59,43 @@ fun DashboardScreen(
         androidx.activity.result.contract.ActivityResultContracts.RequestMultiplePermissions()
     ) { }
 
-    LaunchedEffect(Unit) {
+    DisposableEffect(Unit) {
         launcher.launch(permissionsToRequest)
         
-        val intentFilter = IntentFilter(Intent.ACTION_BATTERY_CHANGED)
-        val batteryStatus = context.registerReceiver(null, intentFilter)
-        
-        batteryLevel = batteryStatus?.getIntExtra(BatteryManager.EXTRA_LEVEL, -1) ?: 0
-        val status = batteryStatus?.getIntExtra(BatteryManager.EXTRA_STATUS, -1) ?: -1
-        isCharging = status == BatteryManager.BATTERY_STATUS_CHARGING || status == BatteryManager.BATTERY_STATUS_FULL
-        
-        batteryTemp = (batteryStatus?.getIntExtra(BatteryManager.EXTRA_TEMPERATURE, 0) ?: 0) / 10f
-        batteryVoltage = batteryStatus?.getIntExtra(BatteryManager.EXTRA_VOLTAGE, 0) ?: 0
-        
-        val health = batteryStatus?.getIntExtra(BatteryManager.EXTRA_HEALTH, -1) ?: -1
-        batteryHealth = when (health) {
-            BatteryManager.BATTERY_HEALTH_GOOD -> "GOOD"
-            BatteryManager.BATTERY_HEALTH_OVERHEAT -> "OVERHEAT"
-            BatteryManager.BATTERY_HEALTH_DEAD -> "DEAD"
-            BatteryManager.BATTERY_HEALTH_OVER_VOLTAGE -> "OVER VOLTAGE"
-            BatteryManager.BATTERY_HEALTH_UNSPECIFIED_FAILURE -> "FAILURE"
-            BatteryManager.BATTERY_HEALTH_COLD -> "COLD"
-            else -> "UNKNOWN"
+        val receiver = object : android.content.BroadcastReceiver() {
+            override fun onReceive(context: Context?, intent: Intent?) {
+                intent?.let { batteryStatus ->
+                    batteryLevel = batteryStatus.getIntExtra(BatteryManager.EXTRA_LEVEL, -1)
+                    val status = batteryStatus.getIntExtra(BatteryManager.EXTRA_STATUS, -1)
+                    isCharging = status == BatteryManager.BATTERY_STATUS_CHARGING || status == BatteryManager.BATTERY_STATUS_FULL
+                    
+                    batteryTemp = batteryStatus.getIntExtra(BatteryManager.EXTRA_TEMPERATURE, 0) / 10f
+                    batteryVoltage = batteryStatus.getIntExtra(BatteryManager.EXTRA_VOLTAGE, 0)
+                    
+                    val health = batteryStatus.getIntExtra(BatteryManager.EXTRA_HEALTH, -1)
+                    batteryHealth = when (health) {
+                        BatteryManager.BATTERY_HEALTH_GOOD -> "GOOD"
+                        BatteryManager.BATTERY_HEALTH_OVERHEAT -> "OVERHEAT"
+                        BatteryManager.BATTERY_HEALTH_DEAD -> "DEAD"
+                        BatteryManager.BATTERY_HEALTH_OVER_VOLTAGE -> "OVER VOLTAGE"
+                        BatteryManager.BATTERY_HEALTH_UNSPECIFIED_FAILURE -> "FAILURE"
+                        BatteryManager.BATTERY_HEALTH_COLD -> "COLD"
+                        else -> "UNKNOWN"
+                    }
+                    
+                    batteryTech = batteryStatus.getStringExtra(BatteryManager.EXTRA_TECHNOLOGY) ?: "Li-ion"
+                }
+            }
         }
         
-        batteryTech = batteryStatus?.getStringExtra(BatteryManager.EXTRA_TECHNOLOGY) ?: "Li-ion"
+        context.registerReceiver(receiver, IntentFilter(Intent.ACTION_BATTERY_CHANGED))
         
+        onDispose {
+            context.unregisterReceiver(receiver)
+        }
+    }
+
+    LaunchedEffect(isCharging) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
             val batteryManager = context.getSystemService(Context.BATTERY_SERVICE) as BatteryManager
             chargingTimeRemaining = batteryManager.computeChargeTimeRemaining()

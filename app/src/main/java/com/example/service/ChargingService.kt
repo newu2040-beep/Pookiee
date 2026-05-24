@@ -92,6 +92,12 @@ class ChargingService : Service() {
         super.onCreate()
         exoPlayer = ExoPlayer.Builder(this).build().apply {
             addListener(playerListener)
+            addListener(object : androidx.media3.common.Player.Listener {
+                override fun onPlayerError(error: androidx.media3.common.PlaybackException) {
+                    _isSoundPlaying.value = false
+                    updateNotification()
+                }
+            })
         }
         
         val filter = IntentFilter().apply {

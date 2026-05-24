@@ -52,6 +52,8 @@ fun BatteryMascot(
             val capHeight = size.height * 0.05f
             val bodyHeight = size.height * 0.95f
             
+            if (size.width <= 0f || size.height <= 0f) return@Canvas
+            
             // Draw Cap
             drawRoundRect(
                 color = Color.Gray.copy(alpha = 0.5f),

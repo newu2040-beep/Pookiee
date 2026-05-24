@@ -6,7 +6,7 @@ import androidx.room.TypeConverters
 import com.example.data.model.ChargingAction
 import com.example.data.model.ChargingHistory
 
-@Database(entities = [ChargingAction::class, ChargingHistory::class], version = 1, exportSchema = false)
+@Database(entities = [ChargingAction::class, ChargingHistory::class], version = 2, exportSchema = false)
 @TypeConverters(Converters::class)
 abstract class PookieeDatabase : RoomDatabase() {
     abstract fun dao(): PookieeDao

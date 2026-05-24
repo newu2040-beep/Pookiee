@@ -26,5 +26,8 @@ data class ChargingAction(
     val isTtsEnabled: Boolean = false,
     val ttsText: String? = null,
     val threshold: Int? = null, // For CUSTOM_THRESHOLD like 80%
-    val vibrationEnabled: Boolean = false
+    val vibrationEnabled: Boolean = false,
+    val customLabel: String? = null,
+    val startMs: Long = 0L,
+    val durationMs: Long? = null // null means play until end
 )

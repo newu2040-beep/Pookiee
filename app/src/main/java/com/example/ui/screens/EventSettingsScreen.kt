@@ -1,6 +1,9 @@
 package com.example.ui.screens
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -37,7 +40,6 @@ fun EventSettingsScreen(
         androidx.activity.result.contract.ActivityResultContracts.GetContent()
     ) { uri ->
         uri?.let {
-            // Persist permission for internal storage URIs if needed, but GetContent is usually fine for one-off
             selectedAction?.let { action ->
                 viewModel.updateAction(action.copy(soundUri = it.toString()))
                 selectedAction = null
@@ -48,7 +50,12 @@ fun EventSettingsScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Meme Alerts") },
+                title = { 
+                    Column {
+                        Text("Meme Trigger Engine", fontWeight = FontWeight.Black)
+                        Text("EVENT-BASED DIAGNOSTICS", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.primary)
+                    }
+                },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
@@ -58,10 +65,19 @@ fun EventSettingsScreen(
         }
     ) { padding ->
         LazyColumn(
-            modifier = Modifier.fillMaxSize().padding(padding),
-            contentPadding = PaddingValues(16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
+            modifier = Modifier.fillMaxSize().padding(padding).background(MaterialTheme.colorScheme.background),
+            contentPadding = PaddingValues(bottom = 24.dp, start = 16.dp, end = 16.dp, top = 8.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
+            item {
+                Text(
+                    "CORE TRIGGERS", 
+                    style = MaterialTheme.typography.labelSmall, 
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier.padding(start = 8.dp, bottom = 4.dp),
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
+                )
+            }
             val allTypes = ChargingEventType.entries
             items(allTypes) { type ->
                 val action = actions.find { it.eventType == type } ?: ChargingAction(type)
@@ -77,26 +93,59 @@ fun EventSettingsScreen(
     }
 
     if (selectedAction != null) {
-        // Simple dialog to mock sound selection for now
+        var tempAction by remember(selectedAction) { mutableStateOf(selectedAction!!) }
+        
         AlertDialog(
             onDismissRequest = { selectedAction = null },
-            title = { Text("Configure ${selectedAction?.eventType?.name}") },
+            title = { Text("Meme Settings", fontWeight = FontWeight.Bold) },
             text = {
-                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Text("Select a meme sound or effect from storage.")
-                    OutlinedButton(onClick = { audioPickerLauncher.launch("audio/*") }) {
-                        Icon(Icons.Default.Upload, contentDescription = null)
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text(if (selectedAction?.soundUri != null) "Change Audio" else "Pick Audio File")
+                Column(verticalArrangement = Arrangement.spacedBy(16.dp), modifier = Modifier.verticalScroll(rememberScrollState())) {
+                    OutlinedTextField(
+                        value = tempAction.customLabel ?: "",
+                        onValueChange = { tempAction = tempAction.copy(customLabel = it) },
+                        label = { Text("Label (Rename Meme)") },
+                        modifier = Modifier.fillMaxWidth()
+                    )
+
+                    Button(
+                        onClick = { audioPickerLauncher.launch("*/*") },
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Icon(Icons.Default.UploadFile, contentDescription = null)
+                        Spacer(Modifier.width(8.dp))
+                        Text("Pick Audio/Video File")
                     }
-                    if (selectedAction?.soundUri != null) {
-                        Text("Current: ${selectedAction?.soundUri}", style = MaterialTheme.typography.labelSmall)
+
+                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        OutlinedTextField(
+                            value = (tempAction.startMs / 1000).toString(),
+                            onValueChange = { tempAction = tempAction.copy(startMs = (it.toLongOrNull() ?: 0L) * 1000) },
+                            label = { Text("Start (s)") },
+                            modifier = Modifier.weight(1f)
+                        )
+                        OutlinedTextField(
+                            value = (tempAction.durationMs?.let { it / 1000 } ?: "").toString(),
+                            onValueChange = { tempAction = tempAction.copy(durationMs = it.toLongOrNull()?.let { s -> s * 1000 }) },
+                            label = { Text("Duration (s)") },
+                            modifier = Modifier.weight(1f),
+                            placeholder = { Text("Full") }
+                        )
+                    }
+
+                    Column {
+                        Text("Volume: ${(tempAction.volume * 100).toInt()}%", style = MaterialTheme.typography.labelMedium)
+                        Slider(value = tempAction.volume, onValueChange = { tempAction = tempAction.copy(volume = it) })
                     }
                 }
             },
             confirmButton = {
+                Button(onClick = { viewModel.updateAction(tempAction); selectedAction = null }) {
+                    Text("Save")
+                }
+            },
+            dismissButton = {
                 TextButton(onClick = { selectedAction = null }) {
-                    Text("Done")
+                    Text("Cancel")
                 }
             }
         )
@@ -135,7 +184,7 @@ fun EventItem(
             Spacer(modifier = Modifier.width(16.dp))
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = action.eventType.name.replace("_", " "),
+                    text = action.customLabel ?: action.eventType.name.replace("_", " "),
                     fontWeight = FontWeight.Black,
                     style = MaterialTheme.typography.bodyLarge
                 )

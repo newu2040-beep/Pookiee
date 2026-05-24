@@ -20,12 +20,27 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
 import androidx.media3.common.MediaItem
 import androidx.media3.exoplayer.ExoPlayer
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.asStateFlow
 
 class ChargingService : Service() {
+    companion object {
+        const val ACTION_STOP_SOUND = "com.example.ACTION_STOP_SOUND"
+        private val _isSoundPlaying = MutableStateFlow(false)
+        val isSoundPlaying = _isSoundPlaying.asStateFlow()
+    }
+
     private val serviceJob = SupervisorJob()
     private val serviceScope = CoroutineScope(Dispatchers.Main + serviceJob)
     private var exoPlayer: ExoPlayer? = null
     
+    private val playerListener = object : androidx.media3.common.Player.Listener {
+        override fun onIsPlayingChanged(isPlaying: Boolean) {
+            _isSoundPlaying.value = isPlaying
+            updateNotification()
+        }
+    }
+
     private val batteryReceiver = object : BroadcastReceiver() {
         private var lastLevel = -1
         private var lastStatus = -1
@@ -42,15 +57,12 @@ class ChargingService : Service() {
                     if (status == BatteryManager.BATTERY_STATUS_FULL && lastStatus != status) {
                         handleEvent(ChargingEventType.BATTERY_FULL)
                     }
-                    
                     if (level == 20 && lastLevel > 20) {
                         handleEvent(ChargingEventType.BATTERY_LOW)
                     }
-                    
                     if (temperature > 45 && level > lastLevel) {
                         handleEvent(ChargingEventType.OVERHEATING)
                     }
-                    
                     lastLevel = level
                     lastStatus = status
                 }
@@ -58,9 +70,27 @@ class ChargingService : Service() {
         }
     }
 
+    private fun updateNotification() {
+        val manager = getSystemService(NotificationManager::class.java)
+        manager.notify(1337, createNotification())
+    }
+
+    override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+        if (intent?.action == ACTION_STOP_SOUND) {
+            stopSound()
+        }
+        return START_STICKY
+    }
+
+    private fun stopSound() {
+        exoPlayer?.stop()
+    }
+
     override fun onCreate() {
         super.onCreate()
-        exoPlayer = ExoPlayer.Builder(this).build()
+        exoPlayer = ExoPlayer.Builder(this).build().apply {
+            addListener(playerListener)
+        }
         
         val filter = IntentFilter().apply {
             addAction(Intent.ACTION_POWER_CONNECTED)
@@ -77,26 +107,31 @@ class ChargingService : Service() {
         serviceScope.launch {
             val action = repository.getActionByType(type)
             if (action?.isEnabled == true) {
-                action.soundUri?.let { playSound(it, action.volume) }
-                
-                // Add to history
+                action.soundUri?.let { playSound(it, action.volume, action.startMs, action.durationMs) }
                 repository.addHistory(ChargingHistory(
                     eventType = type,
-                    batteryLevel = -1, // Getting real level would be better
-                    isFastCharging = false // Simplified
+                    batteryLevel = -1,
+                    isFastCharging = false
                 ))
             }
         }
     }
 
-    private fun playSound(uri: String, volume: Float) {
+    private fun playSound(uri: String, volume: Float, startMs: Long, durationMs: Long?) {
         exoPlayer?.apply {
             stop()
             clearMediaItems()
-            setMediaItem(MediaItem.fromUri(uri))
+            setMediaItem(MediaItem.fromUri(uri), startMs)
             setVolume(volume)
             prepare()
             play()
+
+            if (durationMs != null && durationMs > 0) {
+                serviceScope.launch {
+                    kotlinx.coroutines.delay(durationMs)
+                    if (isPlaying) stop()
+                }
+            }
         }
     }
 
@@ -106,11 +141,22 @@ class ChargingService : Service() {
         val manager = getSystemService(NotificationManager::class.java)
         manager.createNotificationChannel(NotificationChannel(channelId, channelName, NotificationManager.IMPORTANCE_LOW))
         
-        return NotificationCompat.Builder(this, channelId)
-            .setContentTitle("Pookiee is Monitoring")
-            .setContentText("Listening for charging events...")
+        val stopIntent = Intent(this, ChargingService::class.java).apply {
+            action = ACTION_STOP_SOUND
+        }
+        val stopPendingIntent = android.app.PendingIntent.getService(this, 0, stopIntent, android.app.PendingIntent.FLAG_IMMUTABLE)
+
+        val builder = NotificationCompat.Builder(this, channelId)
+            .setContentTitle("Pookiee Active")
+            .setContentText(if (_isSoundPlaying.value) "Meme Sound Playing..." else "Monitoring Charging Events")
             .setSmallIcon(android.R.drawable.ic_lock_idle_charging)
-            .build()
+            .setOngoing(true)
+
+        if (_isSoundPlaying.value) {
+            builder.addAction(android.R.drawable.ic_media_pause, "Stop Meme", stopPendingIntent)
+        }
+        
+        return builder.build()
     }
 
     override fun onBind(intent: Intent?): IBinder? = null

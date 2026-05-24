@@ -10,6 +10,7 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.DarkMode
 import androidx.compose.material.icons.filled.LightMode
+import androidx.compose.material.icons.filled.NightsStay
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -25,14 +26,16 @@ import com.example.PookieeTheme
 fun ThemePickerScreen(
     currentTheme: PookieeTheme,
     isDarkMode: Boolean,
+    isAmoled: Boolean,
     onThemeSelected: (PookieeTheme) -> Unit,
     onToggleDarkMode: (Boolean) -> Unit,
+    onToggleAmoled: (Boolean) -> Unit,
     onBack: () -> Unit
 ) {
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("App Aesthetics") },
+                title = { Text("App Aesthetics", fontWeight = FontWeight.Black) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
@@ -42,23 +45,43 @@ fun ThemePickerScreen(
         }
     ) { padding ->
         Column(modifier = Modifier.fillMaxSize().padding(padding).background(MaterialTheme.colorScheme.background)) {
-            // Dark Mode Toggle
+            // Theme Mode Controls
             Surface(
                 modifier = Modifier.padding(16.dp).fillMaxWidth(),
                 color = MaterialTheme.colorScheme.surface,
-                shape = RoundedCornerShape(24.dp),
+                shape = RoundedCornerShape(28.dp),
                 border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outline)
             ) {
-                Row(
-                    modifier = Modifier.padding(20.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                        Icon(if (isDarkMode) Icons.Default.DarkMode else Icons.Default.LightMode, contentDescription = null)
-                        Text("Dark Mode", fontWeight = FontWeight.Bold)
+                Column(modifier = Modifier.padding(8.dp)) {
+                    Row(
+                        modifier = Modifier.padding(16.dp).fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+                            Icon(if (isDarkMode) Icons.Default.DarkMode else Icons.Default.LightMode, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                            Text("Dark Mode", fontWeight = FontWeight.Bold)
+                        }
+                        Switch(checked = isDarkMode, onCheckedChange = onToggleDarkMode)
                     }
-                    Switch(checked = isDarkMode, onCheckedChange = onToggleDarkMode)
+                    
+                    if (isDarkMode) {
+                        HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp), color = MaterialTheme.colorScheme.outline.copy(alpha = 0.5f))
+                        Row(
+                            modifier = Modifier.padding(16.dp).fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+                                Icon(Icons.Default.NightsStay, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                                Column {
+                                    Text("AMOLED Mode", fontWeight = FontWeight.Bold)
+                                    Text("Pure black background", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f))
+                                }
+                            }
+                            Switch(checked = isAmoled, onCheckedChange = onToggleAmoled)
+                        }
+                    }
                 }
             }
 
@@ -73,11 +96,11 @@ fun ThemePickerScreen(
             LazyVerticalGrid(
                 columns = GridCells.Fixed(2),
                 modifier = Modifier.weight(1f),
-                contentPadding = PaddingValues(16.dp),
+                contentPadding = PaddingValues(16.dp, 8.dp, 16.dp, 16.dp),
                 horizontalArrangement = Arrangement.spacedBy(16.dp),
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                items(PookieeTheme.entries) { theme ->
+                items(com.example.PookieeTheme.entries) { theme ->
                     ThemeCard(
                         theme = theme,
                         isSelected = theme == currentTheme,
@@ -103,6 +126,11 @@ fun ThemeCard(
         PookieeTheme.OCEAN -> Color(0xFF42A5F5)
         PookieeTheme.SUNSET -> Color(0xFFFF7043)
         PookieeTheme.ARCTIC -> Color(0xFF26C6DA)
+        PookieeTheme.ROSE -> Color(0xFFF48FB1)
+        PookieeTheme.SKY -> Color(0xFF81D4FA)
+        PookieeTheme.SLATE -> Color(0xFF90A4AE)
+        PookieeTheme.CHARCOAL -> Color(0xFF546E7A)
+        PookieeTheme.LIME -> Color(0xFFCDDC39)
     }
 
     Surface(

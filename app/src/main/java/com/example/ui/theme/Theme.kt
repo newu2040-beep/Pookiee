@@ -48,11 +48,13 @@ private val LightColorScheme =
 fun Theme(
   pookieeTheme: PookieeTheme = PookieeTheme.LAVENDER,
   darkTheme: Boolean = isSystemInDarkTheme(),
+  isAmoled: Boolean = false,
   // Dynamic color is available on Android 12+
   dynamicColor: Boolean = true,
   content: @Composable () -> Unit,
 ) {
   val baseScheme = when (pookieeTheme) {
+    // ... (existing themes)
     PookieeTheme.LAVENDER -> LightColorScheme
     PookieeTheme.SAKURA -> LightColorScheme.copy(
         primary = Color(0xFFF06292),
@@ -84,15 +86,42 @@ fun Theme(
         secondaryContainer = Color(0xFFE0F7FA),
         onSecondaryContainer = Color(0xFF006064)
     )
+    PookieeTheme.ROSE -> LightColorScheme.copy(
+        primary = Color(0xFFF48FB1),
+        secondaryContainer = Color(0xFFFCE4EC),
+        onSecondaryContainer = Color(0xFFD81B60)
+    )
+    PookieeTheme.SKY -> LightColorScheme.copy(
+        primary = Color(0xFF81D4FA),
+        secondaryContainer = Color(0xFFE1F5FE),
+        onSecondaryContainer = Color(0xFF0288D1)
+    )
+    PookieeTheme.SLATE -> LightColorScheme.copy(
+        primary = Color(0xFF90A4AE),
+        secondaryContainer = Color(0xFFECEFF1),
+        onSecondaryContainer = Color(0xFF455A64)
+    )
+    PookieeTheme.CHARCOAL -> LightColorScheme.copy(
+        primary = Color(0xFF546E7A),
+        secondaryContainer = Color(0xFFCFD8DC),
+        onSecondaryContainer = Color(0xFF263238)
+    )
+    PookieeTheme.LIME -> LightColorScheme.copy(
+        primary = Color(0xFFCDDC39),
+        secondaryContainer = Color(0xFFF9FBE7),
+        onSecondaryContainer = Color(0xFF827717)
+    )
   }
 
+  val amoledBackground = Color.Black
   val colorScheme = if (darkTheme) {
     DarkColorScheme.copy(
         primary = baseScheme.primary,
         secondaryContainer = baseScheme.primary.copy(alpha = 0.2f),
         onSecondaryContainer = baseScheme.primary,
-        background = BentoDarkSurface,
-        surface = BentoDarkSurface
+        background = if (isAmoled) amoledBackground else BentoDarkSurface,
+        surface = if (isAmoled) amoledBackground else BentoDarkSurface,
+        surfaceVariant = if (isAmoled) Color(0xFF121212) else BentoDarkSurface
     )
   } else {
     baseScheme

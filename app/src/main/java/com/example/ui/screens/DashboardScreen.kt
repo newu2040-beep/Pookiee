@@ -5,6 +5,7 @@ import android.os.BatteryManager
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
+import com.example.service.ChargingService
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -13,6 +14,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -85,6 +87,8 @@ fun DashboardScreen(
         }
     }
 
+    val isSoundPlaying by ChargingService.isSoundPlaying.collectAsState()
+
     Scaffold(
         topBar = {
             TopAppBar(
@@ -96,10 +100,25 @@ fun DashboardScreen(
                 title = { 
                     Column {
                         Text("Pookiee", fontWeight = FontWeight.Black, color = MaterialTheme.colorScheme.primary)
-                        Text("CHARGING UTILITY", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f))
+                        Text("CHARGING UTILITY v2", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f))
                     }
                 },
                 actions = {
+                    if (isSoundPlaying) {
+                        TextButton(
+                            onClick = { 
+                                context.startService(Intent(context, ChargingService::class.java).apply {
+                                    action = ChargingService.ACTION_STOP_SOUND
+                                })
+                            },
+                            colors = ButtonDefaults.textButtonColors(contentColor = Color.Red)
+                        ) {
+                            Icon(Icons.Default.Stop, contentDescription = null)
+                            Spacer(Modifier.width(4.dp))
+                            Text("STOP", fontWeight = FontWeight.Bold)
+                        }
+                    }
+                    
                     Surface(
                         color = MaterialTheme.colorScheme.secondaryContainer,
                         shape = RoundedCornerShape(24.dp),
@@ -112,7 +131,7 @@ fun DashboardScreen(
                             horizontalArrangement = Arrangement.spacedBy(6.dp)
                         ) {
                             Box(modifier = Modifier.size(8.dp).clip(androidx.compose.foundation.shape.CircleShape).background(MaterialTheme.colorScheme.onSecondaryContainer))
-                            Text("ACTIVE", style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSecondaryContainer)
+                            Text("LIVE", style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSecondaryContainer)
                         }
                     }
                 }

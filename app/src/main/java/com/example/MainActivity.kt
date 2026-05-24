@@ -31,7 +31,7 @@ import kotlinx.serialization.Serializable
 @Serializable object ThemePickerRoute
 
 enum class PookieeTheme {
-    LAVENDER, SAKURA, MINT, PEACH, OCEAN, SUNSET, ARCTIC
+    LAVENDER, SAKURA, MINT, PEACH, OCEAN, SUNSET, ARCTIC, ROSE, SKY, SLATE, CHARCOAL, LIME
 }
 
 class MainActivity : ComponentActivity() {
@@ -46,13 +46,16 @@ class MainActivity : ComponentActivity() {
     setContent {
       var currentTheme by remember { mutableStateOf(PookieeTheme.LAVENDER) }
       var isDarkMode by remember { mutableStateOf(false) }
+      var isAmoled by remember { mutableStateOf(false) }
 
-      Theme(pookieeTheme = currentTheme, darkTheme = isDarkMode) {
+      Theme(pookieeTheme = currentTheme, darkTheme = isDarkMode, isAmoled = isAmoled) {
         PookieeApp(
             onThemeChange = { currentTheme = it }, 
             currentTheme = currentTheme,
             isDarkMode = isDarkMode,
-            onToggleDarkMode = { isDarkMode = it }
+            onToggleDarkMode = { isDarkMode = it },
+            isAmoled = isAmoled,
+            onToggleAmoled = { isAmoled = it }
         )
       }
     }
@@ -64,7 +67,9 @@ fun PookieeApp(
     onThemeChange: (PookieeTheme) -> Unit, 
     currentTheme: PookieeTheme,
     isDarkMode: Boolean,
-    onToggleDarkMode: (Boolean) -> Unit
+    onToggleDarkMode: (Boolean) -> Unit,
+    isAmoled: Boolean,
+    onToggleAmoled: (Boolean) -> Unit
 ) {
   val navController = rememberNavController()
   val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
@@ -134,6 +139,17 @@ fun PookieeApp(
           icon = { Icon(Icons.Default.Palette, contentDescription = null) },
           modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
         )
+
+        Spacer(Modifier.weight(1f))
+        
+        HorizontalDivider(modifier = Modifier.padding(28.dp), color = MaterialTheme.colorScheme.outline.copy(alpha = 0.3f))
+        Text(
+            "Made with ❤️ by Editingcells", 
+            modifier = Modifier.padding(start = 28.dp, end = 28.dp, bottom = 32.dp),
+            style = MaterialTheme.typography.labelSmall,
+            fontWeight = FontWeight.Bold,
+            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
+        )
       }
     }
   ) {
@@ -166,8 +182,10 @@ fun PookieeApp(
             ThemePickerScreen(
                 currentTheme = currentTheme,
                 isDarkMode = isDarkMode,
+                isAmoled = isAmoled,
                 onThemeSelected = onThemeChange,
                 onToggleDarkMode = onToggleDarkMode,
+                onToggleAmoled = onToggleAmoled,
                 onBack = { navController.popBackStack() }
             )
         }

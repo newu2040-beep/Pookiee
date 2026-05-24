@@ -29,8 +29,21 @@ fun EventSettingsScreen(
     onBack: () -> Unit,
     viewModel: PookieeViewModel = viewModel(factory = PookieeViewModelFactory((LocalContext.current.applicationContext as PookieeApplication).repository))
 ) {
+    val context = LocalContext.current
     val actions by viewModel.allActions.collectAsState(initial = emptyList())
     var selectedAction by remember { mutableStateOf<ChargingAction?>(null) }
+
+    val audioPickerLauncher = androidx.activity.compose.rememberLauncherForActivityResult(
+        androidx.activity.result.contract.ActivityResultContracts.GetContent()
+    ) { uri ->
+        uri?.let {
+            // Persist permission for internal storage URIs if needed, but GetContent is usually fine for one-off
+            selectedAction?.let { action ->
+                viewModel.updateAction(action.copy(soundUri = it.toString()))
+                selectedAction = null
+            }
+        }
+    }
 
     Scaffold(
         topBar = {
@@ -71,10 +84,13 @@ fun EventSettingsScreen(
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     Text("Select a meme sound or effect from storage.")
-                    OutlinedButton(onClick = { /* File picker logic */ }) {
+                    OutlinedButton(onClick = { audioPickerLauncher.launch("audio/*") }) {
                         Icon(Icons.Default.Upload, contentDescription = null)
                         Spacer(modifier = Modifier.width(8.dp))
-                        Text("Pick Audio File")
+                        Text(if (selectedAction?.soundUri != null) "Change Audio" else "Pick Audio File")
+                    }
+                    if (selectedAction?.soundUri != null) {
+                        Text("Current: ${selectedAction?.soundUri}", style = MaterialTheme.typography.labelSmall)
                     }
                 }
             },
